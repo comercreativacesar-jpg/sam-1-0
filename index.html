@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10172d">
+<title>SAM 1.0</title>
+<style>
+body{margin:0;padding:22px;background:#0c1225;color:white;font-family:Arial,sans-serif}
+main{max-width:650px;margin:30px auto}
+header,.msg,.composer{background:#1c2948;border:1px solid #344365;border-radius:22px;padding:22px;margin-bottom:18px}
+h1{font-size:40px}.cyan{color:#68dce8}
+#chat{display:flex;flex-direction:column;gap:12px}
+.msg{line-height:1.5}.user{background:#24516a;align-self:flex-end}
+input{flex:1;min-width:0;padding:15px;border-radius:15px;border:0;font-size:17px}
+.composer{display:flex;gap:8px}
+button{padding:14px;border:0;border-radius:15px;background:#68dce8;font-size:19px}
+#status{color:#b9c8e5;margin:15px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="cyan">TU COPILOTO VIRTUAL</div>
+<h1>Hola, capitán.</h1>
+<p>Estoy lista para acompañarte. Pulsa el micrófono para conversar conmigo.</p>
+</header>
+<div id="status">SAM está lista.</div>
+<div id="chat">
+<div class="msg">Hola, capitán. Soy SAM 1.0. Puedes escribirme o hablar conmigo.</div>
+</div>
+<form class="composer" id="form">
+<button type="button" id="mic">🎙</button>
+<input id="input" placeholder="Escribe a SAM...">
+<button type="submit">➤</button>
+</form>
+</main>
+<script>
+const chat=document.getElementById('chat');
+const input=document.getElementById('input');
+const status=document.getElementById('status');
+function add(t,user=false){
+const d=document.createElement('div');
+d.className='msg'+(user?' user':'');
+d.textContent=t;chat.appendChild(d);
+}
+function speak(t){
+if(!('speechSynthesis'in window))return;
+speechSynthesis.cancel();
+let u=new SpeechSynthesisUtterance(t);
+u.lang='es-MX';speechSynthesis.speak(u);
+}
+function reply(t){
+let a='Te escucho, capitán. Seguimos construyendo SAM.';
+if(t.toLowerCase().includes('hola'))a='¡Hola, capitán! Qué gusto saludarte. ¿Qué hacemos hoy?';
+if(t.toLowerCase().includes('fecha'))a='Hoy es '+new Intl.DateTimeFormat('es-MX',{dateStyle:'full'}).format(new Date())+'.';
+add(a);speak(a);
+}
+document.getElementById('form').onsubmit=e=>{
+e.preventDefault();let t=input.value.trim();if(!t)return;
+add(t,true);input.value='';reply(t);
+};
+let rec=null,active=false;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+document.getElementById('mic').onclick=()=>{
+if(active){active=false;rec.stop();status.textContent='Micrófono detenido.';return;}
+if(!SR){status.textContent='El reconocimiento requiere Chrome y HTTPS.';return;}
+rec=new SR();rec.lang='es-MX';rec.continuous=true;
+rec.onstart=()=>{active=true;status.textContent='Escuchando...';};
+rec.onresult=e=>{
+let t=e.results[e.results.length-1][0].transcript;
+add(t,true);reply(t);
+};
+rec.onerror=e=>{status.textContent='Error de micrófono: '+e.error;active=false;};
+rec.onend=()=>{if(active){try{rec.start();}catch(e){active=false;}}};
+rec.start();
+};
+</script>
+</body>
+</html>
